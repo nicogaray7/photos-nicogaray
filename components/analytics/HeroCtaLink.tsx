@@ -4,15 +4,23 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { track } from '@/lib/analytics';
 
-/** CTA "Explorer la galerie" du hero, avec suivi GA4 clic_cta. */
-export function HeroCtaLink({ href, label }: { href: string; label: string }) {
+/** CTA générique avec suivi GA4 clic_cta (utilisé sur le hero et les pages guide). */
+export function HeroCtaLink({
+  href,
+  label,
+  location = 'hero',
+}: {
+  href: string;
+  label: string;
+  location?: string;
+}) {
   return (
     <Link
       href={href}
       onClick={() =>
         track.event('clic_cta', {
           cta_label: label,
-          cta_location: 'hero',
+          cta_location: location,
           cta_url: href,
         })
       }
