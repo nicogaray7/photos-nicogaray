@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Container } from './Container';
 import { Logo } from './Logo';
+import { SocialLinks } from './SocialLinks';
 
 const THEME_COLLECTIONS: { slug: string; labelFr: string; labelEn: string }[] = [
   { slug: 'fonds-decran-mer', labelFr: 'Mer', labelEn: 'Sea' },
@@ -44,6 +45,9 @@ export function Footer() {
               {isEn ? c.labelEn : c.labelFr}
             </Link>
           ))}
+          <div className="ml-auto">
+            <SocialLinks />
+          </div>
         </div>
       </Container>
     </footer>
