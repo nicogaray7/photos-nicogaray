@@ -37,7 +37,7 @@ function HomeJsonLd({ locale }: { locale: string }) {
     jobTitle: locale === 'en' ? 'Travel Photographer' : 'Photographe de voyage',
     sameAs: [
       'https://nicogaray.com',
-      'https://www.instagram.com/nicogaray/',
+      'https://www.instagram.com/culturspotter/',
       'https://www.pinterest.com/garaynicong/',
     ],
   };
