@@ -70,6 +70,7 @@ model Photo {
   originalKey String // full-size HD file
   previewKey  String // watermarked preview ~1600px
   thumbKey    String // small thumbnail ~600px
+  pinKey      String? // recadrage vertical 1000x1500 servi au flux Pinterest
   fileSize    Int    @default(0)
   width       Int    @default(0)
   height      Int    @default(0)
