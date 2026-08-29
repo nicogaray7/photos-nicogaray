@@ -16,6 +16,7 @@ import { prisma } from '@/lib/prisma';
 import { r2PublicUrl } from '@/lib/r2';
 import { formatPrice, slugify } from '@/lib/utils';
 import { COUNTRY_NAMES } from '@/lib/country-names';
+import { fuzzPublicCoordinate } from '@/lib/geo';
 
 export const revalidate = 60;
 
@@ -173,7 +174,13 @@ function PhotoView({
             '@type': 'Place',
             name: location,
             ...(photo.latitude != null && photo.longitude != null
-              ? { geo: { '@type': 'GeoCoordinates', latitude: photo.latitude, longitude: photo.longitude } }
+              ? {
+                  geo: {
+                    '@type': 'GeoCoordinates',
+                    latitude: fuzzPublicCoordinate(photo.latitude),
+                    longitude: fuzzPublicCoordinate(photo.longitude),
+                  },
+                }
               : {}),
           },
         }

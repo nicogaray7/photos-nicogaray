@@ -3,6 +3,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { Container } from '@/components/layout/Container';
 import { WorldMap } from '@/components/WorldMap';
 import { prisma } from '@/lib/prisma';
+import { fuzzPublicCoordinate } from '@/lib/geo';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -45,7 +46,11 @@ async function getPhotoDots() {
     where: { published: true, latitude: { not: null }, longitude: { not: null }, countryCode: { not: null } },
     select: { latitude: true, longitude: true, countryCode: true },
   });
-  return rows.map((r) => ({ lat: r.latitude!, lng: r.longitude!, countryCode: r.countryCode! }));
+  return rows.map((r) => ({
+    lat: fuzzPublicCoordinate(r.latitude!),
+    lng: fuzzPublicCoordinate(r.longitude!),
+    countryCode: r.countryCode!,
+  }));
 }
 
 export default async function MapPage(props: { params: Promise<{ locale: string }> }) {
