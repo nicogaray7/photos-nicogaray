@@ -7,7 +7,7 @@ import { track } from '@/lib/analytics';
 // meme affirmation d'identite, cote lien plutot que cote donnees structurees, et
 // Pinterest s'en sert pour rattacher le site au profil.
 const RESEAUX = [
-  { nom: 'Instagram', url: 'https://www.instagram.com/nicogaray/' },
+  { nom: 'Instagram', url: 'https://www.instagram.com/culturspotter/' },
   { nom: 'Pinterest', url: 'https://www.pinterest.com/garaynicong/' },
 ] as const;
 
