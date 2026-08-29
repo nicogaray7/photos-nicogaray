@@ -379,6 +379,30 @@ function PhotoView({
                     </li>
                   </ul>
                 </div>
+                {/*
+                  Les 226 pages photo ne linkaient vers aucun guide (seul le
+                  footer pointe vers celui iPhone). Ce lien contextuel sert le
+                  visiteur (installer sa photo juste après l'achat) et fait de
+                  chaque page photo une source de maillage interne vers les
+                  guides, dont le ranking Google est aujourd'hui trop bas
+                  (positions 20-80) pour qu'un meilleur titre change quoi que
+                  ce soit sans autorité interne supplémentaire.
+                */}
+                <div className="border-t border-line pt-4">
+                  <Link
+                    href={`/${locale}/guide/fond-decran-iphone`}
+                    className="text-xs text-accent hover:underline"
+                  >
+                    {locale === 'en' ? 'How to set it as your iPhone wallpaper' : "Comment l'installer en fond d'écran iPhone"}
+                  </Link>
+                  <span className="text-xs text-ink-muted mx-1.5">·</span>
+                  <Link
+                    href={`/${locale}/guide/fond-decran-android`}
+                    className="text-xs text-accent hover:underline"
+                  >
+                    Android
+                  </Link>
+                </div>
               </div>
             </aside>
 
