@@ -89,7 +89,6 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
       title,
       description,
       url,
-      type: 'article',
       images: image
         ? [{ url: image, width: photo.width || undefined, height: photo.height || undefined, alt: title }]
         : undefined,
@@ -99,6 +98,17 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
       title,
       description,
       images: image ? [image] : undefined,
+    },
+    // Next typings n'autorisent pas og:type "product" via openGraph.type (liste
+    // fermée à article/website/...), d'où l'injection manuelle ici. Pinterest lit
+    // product:price:amount et affiche un badge prix directement sur l'épingle
+    // (Rich Pins), ce qui relève le CTR d'un lien "juste une photo".
+    other: {
+      'og:type': 'product',
+      'product:price:amount': String(photo.price),
+      'product:price:currency': photo.currency,
+      'product:availability': 'in stock',
+      'product:retailer_item_id': photo.slug,
     },
   };
 }
