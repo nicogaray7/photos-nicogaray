@@ -1,10 +1,14 @@
 import { prisma } from '@/lib/prisma';
 import { r2PublicUrl } from '@/lib/r2-url';
+import { PIN_WIDTH, PIN_HEIGHT } from '@/lib/pin-format';
 
 // Flux RSS 2.0 pour la création groupée d'épingles Pinterest (1 flux = 1 tableau).
 // Contient toutes les photos publiées du site (du plus ancien au plus récent).
-// L'image est la preview filigranée ; l'original HD est le produit vendu et ne
-// sort jamais ici. Le clic renvoie vers la page produit.
+// L'image servie est le recadrage vertical 1000x1500 (Photo.pinKey), au ratio 2:3
+// recommandé par Pinterest : une photo horizontale y occupe trois fois moins de
+// surface dans le feed et ne sort quasiment pas. Repli sur la preview tant que
+// l'épingle n'est pas générée. Les deux sont filigranées ; l'original HD est le
+// produit vendu et ne sort jamais ici. Le clic renvoie vers la page produit.
 // Généré au runtime (pas au build) : sinon la DB n'est pas joignable pendant le
 // build Docker et le flux sortirait vide.
 export const dynamic = 'force-dynamic';
@@ -45,6 +49,7 @@ export async function GET() {
         city: true,
         country: true,
         previewKey: true,
+        pinKey: true,
         createdAt: true,
       },
       // Pinterest publie le plus ancien en premier : tri croissant par date
@@ -55,9 +60,13 @@ export async function GET() {
 
   const items = photos
     .map((photo) => {
-      const img = r2PublicUrl(photo.previewKey);
+      const img = r2PublicUrl(photo.pinKey ?? photo.previewKey);
       if (!img) return null;
-      const pageUrl = `${BASE}/fr/gallery/${photo.slug}`;
+      // Dimensions annoncées seulement pour l'épingle générée : la preview de
+      // repli n'a pas de taille fixe et mentir à Pinterest la ferait rejeter.
+      const size = photo.pinKey ? ` width="${PIN_WIDTH}" height="${PIN_HEIGHT}"` : '';
+      // Flux en anglais : le clic doit atterrir sur la page anglaise.
+      const pageUrl = `${BASE}/en/gallery/${photo.slug}`;
       const link = `${pageUrl}?utm_source=pinterest&utm_medium=rss`;
       return [
         '    <item>',
@@ -66,7 +75,7 @@ export async function GET() {
         `      <link>${xmlEscape(link)}</link>`,
         `      <guid isPermaLink="true">${xmlEscape(pageUrl)}</guid>`,
         `      <pubDate>${photo.createdAt.toUTCString()}</pubDate>`,
-        `      <media:content url="${xmlEscape(img)}" medium="image"/>`,
+        `      <media:content url="${xmlEscape(img)}" medium="image"${size}/>`,
         '    </item>',
       ].join('\n');
     })
