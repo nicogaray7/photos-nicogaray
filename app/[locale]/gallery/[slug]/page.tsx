@@ -99,17 +99,9 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
       description,
       images: image ? [image] : undefined,
     },
-    // Next typings n'autorisent pas og:type "product" via openGraph.type (liste
-    // fermée à article/website/...), d'où l'injection manuelle ici. Pinterest lit
-    // product:price:amount et affiche un badge prix directement sur l'épingle
-    // (Rich Pins), ce qui relève le CTR d'un lien "juste une photo".
-    other: {
-      'og:type': 'product',
-      'product:price:amount': String(photo.price),
-      'product:price:currency': photo.currency,
-      'product:availability': 'in stock',
-      'product:retailer_item_id': photo.slug,
-    },
+    // og:type=product et product:price:* sont rendus en JSX plus bas (voir
+    // PhotoView) : le champ `other` sort en <meta name="..."> alors que
+    // Pinterest/Facebook n'y lisent que property="og:...".
   };
 }
 
@@ -215,6 +207,15 @@ function PhotoView({
 
   return (
     <article>
+      {/* Rendues ici plutôt que via generateMetadata().other : ce champ sort en
+          <meta name="..."> alors que Pinterest et Facebook ne lisent que
+          property="og:...", ce qui rendait le badge de prix invisible. Next
+          App Router hisse ces balises rendues dans le head automatiquement. */}
+      <meta property="og:type" content="product" />
+      <meta property="product:price:amount" content={String(photo.price)} />
+      <meta property="product:price:currency" content={photo.currency} />
+      <meta property="product:availability" content="in stock" />
+      <meta property="product:retailer_item_id" content={photo.slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(imageLd) }}
