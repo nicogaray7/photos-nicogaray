@@ -95,6 +95,26 @@ const nextConfig = {
         destination: '/:locale/gallery/photo-n-:n',
         permanent: true,
       },
+      // Generic "photo-n-X" slugs renamed to descriptive ones (organic
+      // campaign, 2026-08-29): keep the indexed URLs alive.
+      { source: '/:locale/gallery/photo-n-1', destination: '/:locale/gallery/palmiers-et-lagon-turquoise-a-la-barbade', permanent: true },
+      { source: '/:locale/gallery/photo-n-15', destination: '/:locale/gallery/cretes-volcaniques-du-cantal-sous-le-soleil-d-ete', permanent: true },
+      { source: '/:locale/gallery/photo-n-17', destination: '/:locale/gallery/vue-panoramique-sur-les-volcans-du-cantal-france', permanent: true },
+      { source: '/:locale/gallery/photo-n-19', destination: '/:locale/gallery/vue-aerienne-sur-le-cantal-depuis-mandailles-saint-julien', permanent: true },
+      { source: '/:locale/gallery/photo-n-34', destination: '/:locale/gallery/panorama-sur-la-vieille-ville-de-riga-et-la-daugava-automne', permanent: true },
+      { source: '/:locale/gallery/photo-n-58', destination: '/:locale/gallery/rochers-rouges-et-piste-sinueuse-dans-l-outback-australien', permanent: true },
+      { source: '/:locale/gallery/photo-n-107', destination: '/:locale/gallery/plage-sauvage-a-la-lumiere-doree-australie-occidentale', permanent: true },
+      { source: '/:locale/gallery/photo-n-115', destination: '/:locale/gallery/moutons-au-paturage-dans-les-plaines-australie-occidentale', permanent: true },
+      { source: '/:locale/gallery/photo-n-144', destination: '/:locale/gallery/village-cotier-sur-pilotis-a-linapacan-palawan', permanent: true },
+      { source: '/:locale/gallery/photo-n-145', destination: '/:locale/gallery/embarcadere-et-village-de-linapacan-palawan', permanent: true },
+      { source: '/:locale/gallery/photo-n-160', destination: '/:locale/gallery/tortue-verte-de-pres-sur-un-recif-indonesie', permanent: true },
+      { source: '/:locale/gallery/photo-n-182', destination: '/:locale/gallery/lever-de-soleil-rose-sur-la-vallee-brumeuse-viet-nam', permanent: true },
+      // Branded Pinterest link with UTM tags for GA4 attribution.
+      {
+        source: '/pin',
+        destination: '/?utm_source=pinterest&utm_medium=social&utm_campaign=bio',
+        permanent: false,
+      },
       // Branded Instagram links with UTM tags for GA4 attribution.
       // Bio link → /ig (one link per profile, the main one)
       {
