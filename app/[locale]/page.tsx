@@ -38,6 +38,7 @@ function HomeJsonLd({ locale }: { locale: string }) {
     sameAs: [
       'https://nicogaray.com',
       'https://www.instagram.com/nicogaray/',
+      'https://www.pinterest.com/garaynicong/',
     ],
   };
 

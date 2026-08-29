@@ -89,6 +89,10 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Un seul flux canonique. /pinterest-feed.xml servait les memes 226
+      // items que /rss.xml, qui est celui branche sur l'auto-publication :
+      // connecter les deux aurait produit chaque epingle en double.
+      { source: '/pinterest-feed.xml', destination: '/rss.xml', permanent: true },
       {
         // Permanent redirect of legacy "photographie-n-X" slugs to "photo-n-X"
         source: '/:locale/gallery/photographie-n-:n',
