@@ -93,6 +93,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" className={`${sans.variable} ${display.variable}`}>
       <head>
+        <meta name="google-adsense-account" content="ca-pub-5435447054359850" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5435447054359850"
+          crossOrigin="anonymous"
+        />
         {/* Vérification de domaine Pinterest */}
         <meta name="p:domain_verify" content="3f8bc414d1d7c5975758b57acd5e4768" />
         {/* Google tag (gtag.js) */}
