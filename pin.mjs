@@ -9,24 +9,30 @@
 // would pin every photo twice. It exists so the API path is written, tested
 // and ready the day the app leaves Trial access.
 //
-// WHAT TRIAL ACCESS MEANS HERE. Pins created by an app with Trial access are
-// sandbox entities: only their creator sees them. So a pin made by this script
-// today is a real API round-trip and a real answer from Pinterest, but nobody
-// else will see it. That is exactly what makes it safe to test.
+// WHAT TRIAL ACCESS MEANS HERE. An app on Trial access cannot create a pin in
+// production at all: Pinterest answers 403 code 29 and points at the sandbox.
+// So --publish against production is a no-op until Standard access is granted,
+// and --sandbox is how the chain gets exercised in the meantime.
 //
 // NOTHING IS PUBLISHED BY DEFAULT. The script prints what it would send. The
 // CLAUDE.md rule has no exception: nothing goes out in Nico's name without his
 // word, and --publish is that word, given once per run.
 //
-//   node pin.mjs --limit 5                  # preview, no API call
-//   node pin.mjs --limit 1 --publish        # creates one pin for real
-//   node pin.mjs --limit 1 --publish --fr   # French title, link to /fr/gallery/
+//   node pin.mjs --limit 5                     # preview, no API call
+//   node pin.mjs --limit 1 --publish           # creates one pin for real
+//   node pin.mjs --limit 1 --publish --sandbox # same, against the API sandbox
+//   node pin.mjs --limit 1 --publish --fr      # French title, link to /fr/gallery/
 //
 // Required for --publish: PINTEREST_ACCESS_TOKEN and PINTEREST_BOARD_ID.
 
 import { PrismaClient } from '@prisma/client';
 
-const API = 'https://api.pinterest.com/v5';
+// Trial access is refused on production outright (403, code 29: "Apps with
+// Trial access may not create Pins in production"), so the only place this
+// chain can be exercised end to end before Standard access is the sandbox.
+const SANDBOX = process.argv.includes('--sandbox');
+const API = process.env.PINTEREST_API_BASE
+  || (SANDBOX ? 'https://api-sandbox.pinterest.com/v5' : 'https://api.pinterest.com/v5');
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://photos.nicogaray.com';
 const R2 = (process.env.NEXT_PUBLIC_R2_PUBLIC_URL ?? '').replace(/\/$/, '');
 
@@ -151,7 +157,8 @@ async function main() {
   const already = publish ? await existingLinks() : new Set();
 
   console.log(publish
-    ? `REAL PUBLICATION of up to ${photos.length} pin(s) on board ${boardId}\n`
+    ? `REAL PUBLICATION of up to ${photos.length} pin(s) on board ${boardId}`
+      + ` via ${API}\n`
     : `PREVIEW of ${photos.length} pin(s), no call to Pinterest\n`);
 
   for (const photo of photos) {

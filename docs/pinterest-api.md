@@ -18,11 +18,22 @@ feed.
 gives no control over which board a photo lands on, no title or link per pin,
 and no failure report. It is not the production path yet, for one reason:
 
-> The app is on **Trial access**. Pins created by a Trial app are sandbox
-> entities, visible only to their creator. Publishing through the API today
-> would produce pins nobody else can see.
+> The app is on **Trial access**, and a Trial app cannot create a pin in
+> production at all. Pinterest answers `403 code 29`: "Apps with Trial access
+> may not create Pins in production, use API Sandbox instead."
 
-So the API path is written, tested, and waiting for Standard access.
+So `--publish` against production is a no-op until Standard access is granted.
+`--sandbox` points the same code at `api-sandbox.pinterest.com`, which is how
+the chain is exercised in the meantime.
+
+### Getting Standard access
+
+The upgrade form (My apps, Upgrade access) asks for two things this project does
+not have yet:
+
+1. A **video demo** showing the OAuth screen and the app creating a pin.
+2. A **privacy policy URL**. The site has `/legal/mentions`, `/legal/cgv` and
+   `/legal/license`, but no privacy page.
 
 ### Running it
 
@@ -36,6 +47,15 @@ The launcher refreshes the token, then runs `pin.mjs` inside
 anything, the script reads the board's existing pins and skips any photo whose
 gallery link is already pinned there, which is the guard against the double
 publication the feed makes easy.
+
+### Scopes
+
+`user_accounts:read`, `boards:read`, `boards:read_secret`, `boards:write`,
+`boards:write_secret`, `pins:read`, `pins:read_secret`, `pins:write`,
+`pins:write_secret`. `boards:write` is not optional: Pinterest counts creating a
+pin as writing to the board that holds it and refuses `POST /pins` without it.
+The `_secret` variants allow preparing pins on a private board (`API test`)
+before anything reaches the public profile.
 
 ### Where the credentials live
 
