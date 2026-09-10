@@ -14,6 +14,9 @@ Ce dépôt sert le site photos : https://photos.nicogaray.com
 - **Pinterest** : le SEUL flux est `/rss.xml` (226 photos), branché en auto-publication vers
   le tableau Travel Photography du compte `garaynicong`. `/pinterest-feed.xml` redirige en 308
   vers lui. Ne jamais recréer un second flux : Pinterest publierait chaque épingle deux fois.
+  La voie API (`pin.mjs`, app « Nico Garay Photos ») est écrite mais ne publie pas :
+  l’accès est en Trial, donc ses épingles ne sont visibles que de leur créateur. Tout est dans
+  `docs/pinterest-api.md`, y compris l’ordre à respecter le jour de la bascule.
 - **Slugs** : renommer un slug casse une URL indexée. Toute renommage exige sa redirection
   permanente dans `next.config.mjs`, comme les 216 déjà en place.
 - **Dépôt GitHub** : `nicogaray7/photos-nicogaray`.
