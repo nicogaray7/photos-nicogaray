@@ -118,7 +118,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 security_storage: 'granted'
               });
               gtag('js', new Date());
-              gtag('config', '${GA_ID}', { anonymize_ip: true });
+              if (location.hostname === 'photos.nicogaray.com') { gtag('config', '${GA_ID}', { anonymize_ip: true }); }
             `,
           }}
         />
