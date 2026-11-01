@@ -5,9 +5,25 @@ import { getStripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { sendPurchaseEmail } from '@/lib/email';
 import { sendPurchaseToGA4 } from '@/lib/ga-mp';
+import { recordObservedFee } from '@/lib/pricing';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/** Read the real fee on the payment's balance transaction and feed the price model. */
+async function observeStripeFee(stripe: Stripe, paymentIntentId: string, currency: string) {
+  const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
+    expand: ['latest_charge.balance_transaction'],
+  });
+  const charge = pi.latest_charge;
+  if (!charge || typeof charge === 'string') return;
+  const bt = charge.balance_transaction;
+  // Not available yet for some delayed payment methods: skip this sample.
+  if (!bt || typeof bt === 'string') return;
+  // Prices are in the photo currency; ignore samples settled in another one.
+  if (bt.currency.toLowerCase() !== currency.toLowerCase()) return;
+  await recordObservedFee(bt.amount / 100, bt.fee / 100);
+}
 
 export async function POST(req: Request) {
   const sig = (await headers()).get('stripe-signature');
@@ -26,11 +42,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Bad signature' }, { status: 400 });
   }
 
-  if (event.type === 'checkout.session.completed') {
+  if (
+    event.type === 'checkout.session.completed' ||
+    event.type === 'checkout.session.async_payment_succeeded'
+  ) {
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
     const locale = (session.metadata?.locale === 'en' ? 'en' : 'fr') as 'fr' | 'en';
     if (!orderId) return NextResponse.json({ received: true });
+
+    // Delayed-notification payment methods (e.g. SEPA Direct Debit) complete
+    // the session while it is still unpaid. Fulfil only once the money is
+    // confirmed; that later arrives as checkout.session.async_payment_succeeded.
+    if (session.payment_status === 'unpaid') {
+      return NextResponse.json({ received: true });
+    }
 
     const expiryHours = Number(process.env.DOWNLOAD_TOKEN_EXPIRY_HOURS ?? 48);
     const downloadExpiry = new Date(Date.now() + expiryHours * 3600 * 1000);
@@ -92,19 +118,28 @@ export async function POST(req: Request) {
         {
           item_id: order.photo.slug,
           item_name: order.photo.title,
-          price: order.amount,
+          price: order.total,
           quantity: 1,
           item_category: order.photo.country ?? undefined,
           item_variant: order.photo.orientation ?? undefined,
         },
       ],
     }).catch((err) => console.error('[ga4-mp] purchase send failed', err));
+
+    // Recalibrate the price model from the fee Stripe actually deducted, so
+    // prices keep netting the photo price when Stripe's fees change.
+    if (order.stripePaymentIntentId) {
+      await observeStripeFee(stripe, order.stripePaymentIntentId, order.currency).catch((err) =>
+        console.error('[pricing] fee calibration failed', err),
+      );
+    }
   } else if (event.type === 'checkout.session.expired' || event.type === 'checkout.session.async_payment_failed') {
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
     if (orderId) {
-      await prisma.order.update({
-        where: { id: orderId },
+      // Guard: an out-of-order event must never downgrade a paid order.
+      await prisma.order.updateMany({
+        where: { id: orderId, paymentStatus: { not: 'paid' } },
         data: { paymentStatus: 'failed' },
       });
     }

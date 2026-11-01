@@ -52,7 +52,7 @@ export default async function CheckoutSuccessPage(
                 id: order.photo.id,
                 slug: order.photo.slug,
                 title: order.photo.title,
-                price: order.amount,
+                price: order.total,
                 currency: order.currency,
                 country: order.photo.country,
                 city: order.photo.city,

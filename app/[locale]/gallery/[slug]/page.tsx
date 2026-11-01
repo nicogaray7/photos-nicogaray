@@ -15,6 +15,7 @@ import { ProtectedImg } from '@/components/ProtectedImg';
 import { prisma } from '@/lib/prisma';
 import { r2PublicUrl } from '@/lib/r2';
 import { formatPrice, slugify } from '@/lib/utils';
+import { getFeeModel, priceWithFees, type FeeModel } from '@/lib/pricing';
 import { COUNTRY_NAMES } from '@/lib/country-names';
 import { fuzzPublicCoordinate } from '@/lib/geo';
 
@@ -112,22 +113,33 @@ export default async function PhotoPage(props: { params: Promise<{ locale: strin
   const photo = await getPhoto(params.slug);
   if (!photo) notFound();
 
-  const [related, siblings] = await Promise.all([
+  const [related, siblings, feeModel] = await Promise.all([
     getRelated(photo.id, photo.country),
     getSiblings(photo.slug),
+    getFeeModel(),
   ]);
-  return <PhotoView photo={photo} related={related} siblings={siblings} locale={params.locale} />;
+  return (
+    <PhotoView
+      photo={photo}
+      related={related}
+      siblings={siblings}
+      feeModel={feeModel}
+      locale={params.locale}
+    />
+  );
 }
 
 function PhotoView({
   photo,
   related,
   siblings,
+  feeModel,
   locale,
 }: {
   photo: NonNullable<Awaited<ReturnType<typeof getPhoto>>>;
   related: Awaited<ReturnType<typeof getRelated>>;
   siblings: Awaited<ReturnType<typeof getSiblings>>;
+  feeModel: FeeModel;
   locale: string;
 }) {
   const t = useTranslations('photo');
@@ -142,7 +154,9 @@ function PhotoView({
   const location = [photo.city, countryName].filter(Boolean).join(', ');
   const previewUrl = r2PublicUrl(photo.previewKey) ?? '';
   const intl = locale === 'en' ? 'en-GB' : 'fr-FR';
-  const formattedPrice = formatPrice(photo.price, photo.currency, intl);
+  // All-in price the buyer pays (payment processing cost included).
+  const displayPrice = priceWithFees(photo.price, feeModel);
+  const formattedPrice = formatPrice(displayPrice, photo.currency, intl);
   const dateFmt = photo.takenAt
     ? new Intl.DateTimeFormat(intl, { year: 'numeric', month: 'long' }).format(photo.takenAt)
     : null;
@@ -206,7 +220,7 @@ function PhotoView({
       '@type': 'Offer',
       url: pageUrl,
       priceCurrency: photo.currency,
-      price: photo.price,
+      price: displayPrice,
       availability: 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition',
     },
@@ -219,7 +233,7 @@ function PhotoView({
           property="og:...", ce qui rendait le badge de prix invisible. Next
           App Router hisse ces balises rendues dans le head automatiquement. */}
       <meta property="og:type" content="product" />
-      <meta property="product:price:amount" content={String(photo.price)} />
+      <meta property="product:price:amount" content={String(displayPrice)} />
       <meta property="product:price:currency" content={photo.currency} />
       <meta property="product:availability" content="in stock" />
       <meta property="product:retailer_item_id" content={photo.slug} />
@@ -240,7 +254,7 @@ function PhotoView({
           id: photo.id,
           slug: photo.slug,
           title,
-          price: photo.price,
+          price: displayPrice,
           currency: photo.currency,
           country: photo.country,
           city: photo.city,
@@ -361,7 +375,7 @@ function PhotoView({
                     id: photo.id,
                     slug: photo.slug,
                     title,
-                    price: photo.price,
+                    price: displayPrice,
                     currency: photo.currency,
                     country: photo.country,
                     city: photo.city,
@@ -421,7 +435,7 @@ function PhotoView({
                 id: photo.id,
                 slug: photo.slug,
                 title,
-                price: photo.price,
+                price: displayPrice,
                 currency: photo.currency,
                 country: photo.country,
                 city: photo.city,

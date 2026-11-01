@@ -1,6 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
 import { useTranslations } from 'next-intl';
 import { Container } from '@/components/layout/Container';
+import { getFeeModel, priceWithFees, type FeeModel } from '@/lib/pricing';
 import { prisma } from '@/lib/prisma';
 import { FilterBar } from '@/components/gallery/FilterBar';
 import { GalleryTracker } from '@/components/gallery/GalleryTracker';
@@ -61,21 +62,27 @@ export default async function GalleryPage(
   const searchParams = await props.searchParams;
   const params = await props.params;
   setRequestLocale(params.locale);
-  const [photos, countries] = await Promise.all([getPhotos(searchParams), getCountries(params.locale)]);
-  return <GalleryView photos={photos} countries={countries} locale={params.locale} />;
+  const [photos, countries, feeModel] = await Promise.all([
+    getPhotos(searchParams),
+    getCountries(params.locale),
+    getFeeModel(),
+  ]);
+  return <GalleryView photos={photos} countries={countries} feeModel={feeModel} locale={params.locale} />;
 }
 
 function GalleryView({
   photos,
   countries,
+  feeModel,
   locale,
 }: {
   photos: Awaited<ReturnType<typeof getPhotos>>;
   countries: Awaited<ReturnType<typeof getCountries>>;
+  feeModel: FeeModel;
   locale: string;
 }) {
   const t = useTranslations('gallery');
-  const lightboxPhotos = photos.map((p) => toLightboxPhoto(p, locale));
+  const lightboxPhotos = photos.map((p) => toLightboxPhoto(p, locale, feeModel));
   return (
     <>
       <section className="pt-16 pb-10 sm:pt-24 sm:pb-14">
@@ -106,7 +113,7 @@ function GalleryView({
   );
 }
 
-function toLightboxPhoto(photo: Photo, locale: string): LightboxPhoto {
+function toLightboxPhoto(photo: Photo, locale: string, feeModel: FeeModel): LightboxPhoto {
   const title = locale === 'en' && photo.titleEn ? photo.titleEn : photo.title;
   const countryName =
     photo.countryCode && COUNTRY_NAMES[photo.countryCode]
@@ -128,7 +135,7 @@ function toLightboxPhoto(photo: Photo, locale: string): LightboxPhoto {
     dateLabel,
     width: photo.width,
     height: photo.height,
-    price: photo.price,
+    price: priceWithFees(photo.price, feeModel),
     currency: photo.currency,
     country: photo.country,
     city: photo.city,
