@@ -9,6 +9,8 @@ import { r2, r2Put, R2_ORIGINALS_BUCKET } from '@/lib/r2';
 
 const HERO_KEY = 'hero/main.jpg';
 const HERO_MAX = 2400;
+const HERO_MOBILE_KEY = 'hero/mobile.jpg';
+const HERO_MOBILE_WIDTH = 1080;
 
 async function requireAdmin() {
   const session = await auth();
@@ -45,6 +47,19 @@ export async function setHeroPhoto(photoId: string) {
     .jpeg({ quality: 88, mozjpeg: true })
     .toBuffer();
   await r2Put(HERO_KEY, out, 'image/jpeg');
+
+  // Portrait version for phones: a centered 1:2 slice, so a landscape photo
+  // is not squeezed into a thin, upscaled strip by object-cover.
+  const oriented = await sharp(buf).rotate().toBuffer();
+  const { width = 0, height = 0 } = await sharp(oriented).metadata();
+  const sliceW = Math.min(width, Math.round(height / 2));
+  const sliceH = Math.min(height, sliceW * 2);
+  const mobile = await sharp(oriented)
+    .extract({ left: Math.round((width - sliceW) / 2), top: Math.round((height - sliceH) / 2), width: sliceW, height: sliceH })
+    .resize({ width: HERO_MOBILE_WIDTH, withoutEnlargement: true })
+    .jpeg({ quality: 74, mozjpeg: true, progressive: true })
+    .toBuffer();
+  await r2Put(HERO_MOBILE_KEY, mobile, 'image/jpeg');
 
   revalidatePath('/fr');
   revalidatePath('/en');

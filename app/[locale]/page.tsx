@@ -69,6 +69,8 @@ async function getFeaturedPhotos() {
 }
 
 const HERO_KEY = 'hero/main.jpg';
+// Portrait crop served below the sm breakpoint, written by setHeroPhoto
+const HERO_MOBILE_KEY = 'hero/mobile.jpg';
 
 export default async function HomePage(props: { params: Promise<{ locale: string }> }) {
   const params = await props.params;
@@ -91,17 +93,21 @@ export default async function HomePage(props: { params: Promise<{ locale: string
 function Hero({ locale, settings }: { locale: string; settings: HomeSettings | null }) {
   const t = useTranslations('home');
   const heroUrl = r2PublicUrl(HERO_KEY);
+  const heroMobileUrl = r2PublicUrl(HERO_MOBILE_KEY);
   const subtitle = pickText(settings?.subtitle, locale, t('subtitle'));
   const cta = pickText(settings?.cta, locale, t('cta'));
 
   return (
     <section className="relative min-h-[90vh] flex items-end overflow-hidden bg-ink">
       {heroUrl && (
-        <ProtectedImg
-          src={heroUrl}
-          alt={locale === 'en' ? 'Travel photography by Nico Garay' : 'Photographie de voyage de Nico Garay'}
-          className="absolute inset-0 w-full h-full object-cover opacity-90"
-        />
+        <picture>
+          {heroMobileUrl && <source media="(max-width: 639px)" srcSet={heroMobileUrl} />}
+          <ProtectedImg
+            src={heroUrl}
+            alt={locale === 'en' ? 'Travel photography by Nico Garay' : 'Photographie de voyage de Nico Garay'}
+            className="absolute inset-0 w-full h-full object-cover opacity-90"
+          />
+        </picture>
       )}
       {/* Scrims for the hero text: a tall bottom fade, plus a left fade on wide
           screens where the text sits over the brightest part of the photo */}
