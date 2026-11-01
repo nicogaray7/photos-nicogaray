@@ -103,8 +103,10 @@ function Hero({ locale, settings }: { locale: string; settings: HomeSettings | n
           className="absolute inset-0 w-full h-full object-cover opacity-90"
         />
       )}
-      {/* Bottom scrim for the hero text */}
-      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent pointer-events-none" />
+      {/* Scrims for the hero text: a tall bottom fade, plus a left fade on wide
+          screens where the text sits over the brightest part of the photo */}
+      <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-ink/90 via-ink/45 to-transparent pointer-events-none" />
+      <div className="hidden sm:block absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-ink/55 via-ink/20 to-transparent pointer-events-none" />
 
       <Container className="relative z-10 pb-16 sm:pb-24">
         <div className="max-w-3xl space-y-6 text-paper">
