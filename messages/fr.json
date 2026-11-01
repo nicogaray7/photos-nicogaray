@@ -82,7 +82,6 @@
     "title": "Paiement",
     "subtitle": "Vous êtes sur le point d'acquérir une édition numérique.",
     "buyer": "Paiement sécurisé",
-    "stripeNotice": "Votre nom, email et téléphone vous seront demandés par Stripe sur la page suivante, dans un environnement sécurisé.",
     "summary": "Récapitulatif",
     "total": "Total",
     "submit": "Payer maintenant",
