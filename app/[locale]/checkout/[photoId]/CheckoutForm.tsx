@@ -24,7 +24,6 @@ export function CheckoutForm({ photoId, locale }: { photoId: string; locale: str
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <p className="caption">{t('stripeNotice')}</p>
       {error && <p className="text-xs text-red-700">{error}</p>}
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? '…' : t('submit')}

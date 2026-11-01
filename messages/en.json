@@ -82,7 +82,6 @@
     "title": "Checkout",
     "subtitle": "You are about to acquire a digital edition.",
     "buyer": "Secure checkout",
-    "stripeNotice": "Your name, email and phone number will be collected by Stripe on the next page, in a secure environment.",
     "summary": "Summary",
     "total": "Total",
     "submit": "Pay now",
