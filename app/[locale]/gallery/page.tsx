@@ -1,6 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
 import { useTranslations } from 'next-intl';
 import { Container } from '@/components/layout/Container';
+import { buyerPrice } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { FilterBar } from '@/components/gallery/FilterBar';
 import { GalleryTracker } from '@/components/gallery/GalleryTracker';
@@ -128,7 +129,7 @@ function toLightboxPhoto(photo: Photo, locale: string): LightboxPhoto {
     dateLabel,
     width: photo.width,
     height: photo.height,
-    price: photo.price,
+    price: buyerPrice(photo.price),
     currency: photo.currency,
     country: photo.country,
     city: photo.city,

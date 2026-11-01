@@ -2,7 +2,17 @@
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import { getStripe, buyerFees } from '@/lib/stripe';
+import { getStripe, buyerFees, buyerPrice, PHOTO_TAX_CODE } from '@/lib/stripe';
+
+// Tags these sessions in the Stripe Dashboard to compare checkout flows.
+const INTEGRATION_IDENTIFIER = 'photo-download-checkout-kqzvtmrw';
+
+const WITHDRAWAL_CONSENT: Record<'fr' | 'en', (cgvUrl: string) => string> = {
+  fr: (cgvUrl) =>
+    `J'accepte les [CGV](${cgvUrl}) et je demande l'accès immédiat au fichier numérique : je reconnais ainsi renoncer à mon droit de rétractation.`,
+  en: (cgvUrl) =>
+    `I accept the [terms of sale](${cgvUrl}) and request immediate access to the digital file, and I acknowledge that I thereby waive my right of withdrawal.`,
+};
 
 /** Extrait le client_id GA4 du cookie _ga (format GA1.1.<cid1>.<cid2>). */
 async function gaClientIdFromCookies(): Promise<string> {
@@ -26,8 +36,10 @@ export async function createCheckoutSession(
   const photo = await prisma.photo.findUnique({ where: { id: photoId } });
   if (!photo || !photo.published) return { error: 'Photo not found' };
 
+  // The all-in price shown on the site: the payment processing cost is part
+  // of the price, not a surcharge. `fees` is kept on the Order for accounting.
   const fees = buyerFees(photo.price);
-  const total = Math.round((photo.price + fees) * 100) / 100;
+  const total = buyerPrice(photo.price);
 
   // Create the Order first so we can reference it in Stripe metadata.
   // Buyer details (email, name, phone) are filled in by the webhook once
@@ -44,10 +56,31 @@ export async function createCheckoutSession(
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://photos.nicogaray.com';
   const stripe = getStripe();
+  const lang = locale === 'fr' ? 'fr' : 'en';
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
-    payment_method_types: ['card'],
-    locale: locale === 'fr' ? 'fr' : 'en',
+    // No payment_method_types: dynamic payment methods (cards, Apple Pay,
+    // Google Pay, Link...) are managed from the Stripe Dashboard.
+    locale: lang,
+    integration_identifier: INTEGRATION_IDENTIFIER,
+    // Show the price in the buyer's local currency when relevant.
+    adaptive_pricing: { enabled: true },
+    // EU consumer law: digital content delivered immediately requires the
+    // buyer's express consent to waive the withdrawal right.
+    consent_collection: { terms_of_service: 'required' },
+    custom_text: {
+      terms_of_service_acceptance: {
+        message: WITHDRAWAL_CONSENT[lang](`${siteUrl}/${lang}/legal/cgv`),
+      },
+    },
+    // Post-purchase invoice emailed by Stripe and downloadable by the buyer.
+    invoice_creation: {
+      enabled: true,
+      invoice_data: {
+        description: photo.title,
+        metadata: { orderId: order.id, photoId: photo.id },
+      },
+    },
     // Stripe-native collection of customer details
     billing_address_collection: 'required',
     phone_number_collection: { enabled: true },
@@ -61,6 +94,7 @@ export async function createCheckoutSession(
           product_data: {
             name: photo.title,
             description: photo.description ?? undefined,
+            tax_code: PHOTO_TAX_CODE,
           },
         },
       },

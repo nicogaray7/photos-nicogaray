@@ -26,11 +26,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Bad signature' }, { status: 400 });
   }
 
-  if (event.type === 'checkout.session.completed') {
+  if (
+    event.type === 'checkout.session.completed' ||
+    event.type === 'checkout.session.async_payment_succeeded'
+  ) {
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
     const locale = (session.metadata?.locale === 'en' ? 'en' : 'fr') as 'fr' | 'en';
     if (!orderId) return NextResponse.json({ received: true });
+
+    // Delayed-notification payment methods (e.g. SEPA Direct Debit) complete
+    // the session while it is still unpaid. Fulfil only once the money is
+    // confirmed; that later arrives as checkout.session.async_payment_succeeded.
+    if (session.payment_status === 'unpaid') {
+      return NextResponse.json({ received: true });
+    }
 
     const expiryHours = Number(process.env.DOWNLOAD_TOKEN_EXPIRY_HOURS ?? 48);
     const downloadExpiry = new Date(Date.now() + expiryHours * 3600 * 1000);
@@ -92,7 +102,7 @@ export async function POST(req: Request) {
         {
           item_id: order.photo.slug,
           item_name: order.photo.title,
-          price: order.amount,
+          price: order.total,
           quantity: 1,
           item_category: order.photo.country ?? undefined,
           item_variant: order.photo.orientation ?? undefined,
@@ -103,8 +113,9 @@ export async function POST(req: Request) {
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
     if (orderId) {
-      await prisma.order.update({
-        where: { id: orderId },
+      // Guard: an out-of-order event must never downgrade a paid order.
+      await prisma.order.updateMany({
+        where: { id: orderId, paymentStatus: { not: 'paid' } },
         data: { paymentStatus: 'failed' },
       });
     }

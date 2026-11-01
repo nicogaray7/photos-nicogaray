@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Container } from '@/components/layout/Container';
 import { prisma } from '@/lib/prisma';
 import { r2PublicUrl } from '@/lib/r2';
-import { buyerFees } from '@/lib/stripe';
+import { buyerPrice } from '@/lib/stripe';
 import { formatPrice } from '@/lib/utils';
 import { CheckoutForm } from './CheckoutForm';
 
@@ -26,20 +26,19 @@ export default async function CheckoutPage(props: { params: Promise<{ locale: st
   const photo = await getPhoto(params.photoId);
   if (!photo || !photo.published) notFound();
 
-  const fees = buyerFees(photo.price);
-  const total = Math.round((photo.price + fees) * 100) / 100;
+  // All-in price: the payment processing cost is part of the price, never a
+  // separate surcharge line.
+  const total = buyerPrice(photo.price);
 
-  return <CheckoutView photo={photo} fees={fees} total={total} locale={params.locale} />;
+  return <CheckoutView photo={photo} total={total} locale={params.locale} />;
 }
 
 function CheckoutView({
   photo,
-  fees,
   total,
   locale,
 }: {
   photo: NonNullable<Awaited<ReturnType<typeof getPhoto>>>;
-  fees: number;
   total: number;
   locale: string;
 }) {
@@ -88,15 +87,13 @@ function CheckoutView({
                 </div>
               </div>
               <dl className="border-t border-line pt-4 space-y-2 text-sm">
-                <Row label={title} value={formatPrice(photo.price, photo.currency, intl)} />
-                <Row label={t('fees')} value={formatPrice(fees, photo.currency, intl)} muted />
+                <Row label={title} value={formatPrice(total, photo.currency, intl)} />
                 <Row
                   label={t('total')}
                   value={formatPrice(total, photo.currency, intl)}
                   emphasis
                 />
               </dl>
-              <p className="caption">{t('feesNote')}</p>
             </div>
           </aside>
         </div>
