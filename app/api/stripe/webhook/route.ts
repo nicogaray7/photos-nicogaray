@@ -5,9 +5,25 @@ import { getStripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { sendPurchaseEmail } from '@/lib/email';
 import { sendPurchaseToGA4 } from '@/lib/ga-mp';
+import { recordObservedFee } from '@/lib/pricing';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/** Read the real fee on the payment's balance transaction and feed the price model. */
+async function observeStripeFee(stripe: Stripe, paymentIntentId: string, currency: string) {
+  const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
+    expand: ['latest_charge.balance_transaction'],
+  });
+  const charge = pi.latest_charge;
+  if (!charge || typeof charge === 'string') return;
+  const bt = charge.balance_transaction;
+  // Not available yet for some delayed payment methods: skip this sample.
+  if (!bt || typeof bt === 'string') return;
+  // Prices are in the photo currency; ignore samples settled in another one.
+  if (bt.currency.toLowerCase() !== currency.toLowerCase()) return;
+  await recordObservedFee(bt.amount / 100, bt.fee / 100);
+}
 
 export async function POST(req: Request) {
   const sig = (await headers()).get('stripe-signature');
@@ -109,6 +125,14 @@ export async function POST(req: Request) {
         },
       ],
     }).catch((err) => console.error('[ga4-mp] purchase send failed', err));
+
+    // Recalibrate the price model from the fee Stripe actually deducted, so
+    // prices keep netting the photo price when Stripe's fees change.
+    if (order.stripePaymentIntentId) {
+      await observeStripeFee(stripe, order.stripePaymentIntentId, order.currency).catch((err) =>
+        console.error('[pricing] fee calibration failed', err),
+      );
+    }
   } else if (event.type === 'checkout.session.expired' || event.type === 'checkout.session.async_payment_failed') {
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;

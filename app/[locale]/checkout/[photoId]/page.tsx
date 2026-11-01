@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Container } from '@/components/layout/Container';
 import { prisma } from '@/lib/prisma';
 import { r2PublicUrl } from '@/lib/r2';
-import { buyerPrice } from '@/lib/stripe';
+import { getFeeModel, priceWithFees } from '@/lib/pricing';
 import { formatPrice } from '@/lib/utils';
 import { CheckoutForm } from './CheckoutForm';
 
@@ -28,7 +28,7 @@ export default async function CheckoutPage(props: { params: Promise<{ locale: st
 
   // All-in price: the payment processing cost is part of the price, never a
   // separate surcharge line.
-  const total = buyerPrice(photo.price);
+  const total = priceWithFees(photo.price, await getFeeModel());
 
   return <CheckoutView photo={photo} total={total} locale={params.locale} />;
 }

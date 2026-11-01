@@ -2,7 +2,8 @@
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import { getStripe, buyerFees, buyerPrice, PHOTO_TAX_CODE } from '@/lib/stripe';
+import { getStripe, PHOTO_TAX_CODE } from '@/lib/stripe';
+import { getFeeModel, feesFor, priceWithFees } from '@/lib/pricing';
 
 // Tags these sessions in the Stripe Dashboard to compare checkout flows.
 const INTEGRATION_IDENTIFIER = 'photo-download-checkout-kqzvtmrw';
@@ -38,8 +39,9 @@ export async function createCheckoutSession(
 
   // The all-in price shown on the site: the payment processing cost is part
   // of the price, not a surcharge. `fees` is kept on the Order for accounting.
-  const fees = buyerFees(photo.price);
-  const total = buyerPrice(photo.price);
+  const feeModel = await getFeeModel();
+  const fees = feesFor(photo.price, feeModel);
+  const total = priceWithFees(photo.price, feeModel);
 
   // Create the Order first so we can reference it in Stripe metadata.
   // Buyer details (email, name, phone) are filled in by the webhook once
